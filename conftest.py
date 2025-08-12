@@ -1,5 +1,7 @@
 import pytest
-from src.task_1 import Product, Category
+
+from src.task_1 import Category, Product
+
 
 @pytest.fixture(autouse=True)
 def reset_category_counters():
@@ -9,10 +11,14 @@ def reset_category_counters():
     """
     Category.total_categories = 0
     Category.total_products = 0
+    Category.category_count = 0
+    Category.product_count = 0
     yield
     # (опционально) повторный сброс после теста
     Category.total_categories = 0
     Category.total_products = 0
+    Category.category_count = 0
+    Category.product_count = 0
 
 
 @pytest.fixture

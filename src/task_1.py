@@ -6,30 +6,34 @@ class Product:
         self.quantity = int(quantity)
 
     def __repr__(self):
-        # чтобы print(category2.products) показывал что-то читаемое
         return f"Product(name={self.name!r}, price={self.price}, qty={self.quantity})"
 
 
 class Category:
-    # атрибуты класса (общие для всех объектов)
+    # Атрибуты класса
     category_count: int = 0
-    product_count: int = 0  # считаем количество элементов в списках products
+    product_count: int = 0
+    total_categories: int = 0
+    total_products: int = 0
 
     def __init__(self, name: str, description: str, products: list):
         self.name = name
         self.description = description
-        self.products = list(products)  # фиксируем состав на момент создания
+        self.products = list(products)
 
-        # автоматически обновляем общие счётчики
+        # Обновляем общие счётчики
+        Category.total_categories += 1
+        Category.total_products += len(self.products)
+
         Category.category_count += 1
         Category.product_count += len(self.products)
 
     def __repr__(self):
         return f"Category(name={self.name!r}, products={len(self.products)})"
 
-    # на будущее: если будешь добавлять товары после создания — поддерживай счётчик
     def add_product(self, product: Product):
         if not isinstance(product, Product):
             raise TypeError("В категорию можно добавлять только объекты Product")
         self.products.append(product)
+        Category.total_products += 1
         Category.product_count += 1

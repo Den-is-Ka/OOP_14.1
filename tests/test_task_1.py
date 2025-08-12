@@ -1,4 +1,5 @@
-from src.task_1 import Product, Category
+from src.task_1 import Category, Product
+
 
 def test_product_init():
     p = Product("Milk", "1L milk", 1.49, 3)
@@ -22,9 +23,6 @@ def test_category_init(sample_products):
 
 
 def test_total_counts_after_init(sample_categories):
-    # В фикстуре создаются 2 категории: [p1, p2] и [p3]
-    # => total_categories = 2
-    # => total_products = 3 (по длинам списков)
     assert Category.total_categories == 2
     assert Category.total_products == 3
 
@@ -33,7 +31,6 @@ def test_add_product_updates_totals(sample_categories):
     cat1, _ = sample_categories
     before = Category.total_products
 
-    # добавим ещё один продукт
     new_p = Product("Pear", "Green pear", 0.9, 4)
     cat1.add_product(new_p)
 
