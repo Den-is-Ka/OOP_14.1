@@ -8,6 +8,14 @@ class Product:
     def __repr__(self):
         return f"Product(name={self.name!r}, price={self.__price}, qty={self.quantity})"
 
+    def __str__(self):
+        return f"{self.name}, {self.price} руб. Остаток: {self.quantity} шт."
+
+    def __add__(self, other):
+        if not isinstance(other, Product):
+            return NotImplemented
+        return self.price * self.quantity + other.price * other.quantity
+
     @property
     def price(self):
         return self.__price
@@ -48,6 +56,10 @@ class Category:
     def __repr__(self):
         return f"Category(name={self.name!r}, products={len(self.__products)})"
 
+    def __str__(self):
+        total_quantity = sum(p.quantity for p in self.__products)
+        return f"{self.name}, количество продуктов: {total_quantity} шт."
+
     def add_product(self, product: Product):
         if not isinstance(product, Product):
             raise TypeError("В категорию можно добавлять только объекты Product")
@@ -57,7 +69,4 @@ class Category:
 
     @property
     def products(self):
-        return "".join(
-            f"{p.name}, {p.price} руб. Остаток: {p.quantity} шт.\n"
-            for p in self.__products
-        )
+        return "".join(str(p) + "\n" for p in self.__products)

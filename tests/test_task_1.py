@@ -47,7 +47,9 @@ def test_new_product_classmethod_creates_instance():
     assert p.quantity == 3
 
 
+# ---------- Category: счётчики и add_product ----------
 def test_category_counters_after_init(sample_products):
+    # до создания
     assert Category.total_categories == 0
     assert Category.total_products == 0
     assert Category.category_count == 0
@@ -62,6 +64,7 @@ def test_category_counters_after_init(sample_products):
     assert Category.total_products == 3
     assert Category.product_count == 3
 
+    # __repr__
     assert "Category(name='Fruits'" in repr(cat1)
     assert "Category(name='Citrus'" in repr(cat2)
 
@@ -79,20 +82,56 @@ def test_add_product_updates_counters_and_getter_format(sample_products):
     assert Category.total_products == before_total + 1
     assert Category.product_count == before_prod_count + 1
 
+    # Геттер products возвращает строку, теперь основан на __str__ продукта
     out = cat.products
     assert isinstance(out, str)
     assert f"{new_p.name}, {new_p.price} руб. Остаток: {new_p.quantity} шт.\n" in out
 
 
 def test_products_is_private_list_but_accessible_via_mangling(sample_products):
-    """Проверяем, что атрибут products — это геттер,
-    а список спрятан под __products.
-    """
+    """Атрибут products — это геттер (строка), а реальный список скрыт в __products."""
     p1, p2, _ = sample_products
     cat = Category("Fruits", "Fresh fruits", [p1, p2])
 
+    # публичный геттер возвращает строку
     assert isinstance(cat.products, str)
+    # внутренний список по name-mangling
     internal_list = getattr(cat, "_Category__products")
     assert isinstance(internal_list, list)
     assert len(internal_list) == 2
     assert all(isinstance(x, Product) for x in internal_list)
+
+
+# ---------- NEW: __str__ и __add__ ----------
+def test_product_str(sample_product_data):
+    """Строковое представление Product."""
+    p = Product(**sample_product_data)
+    expected = f"{p.name}, {p.price} руб. Остаток: {p.quantity} шт."
+    assert str(p) == expected
+
+
+def test_category_str(sample_products):
+    """Строковое представление Category — сумма quantity всех товаров."""
+    p1, p2, p3 = sample_products
+    cat = Category("Fruits", "Fresh fruits", [p1, p2])
+    total_qty = p1.quantity + p2.quantity
+    assert str(cat) == f"Fruits, количество продуктов: {total_qty} шт."
+
+    # после добавления товара qty пересчитывается
+    cat.add_product(p3)
+    total_qty_new = total_qty + p3.quantity
+    assert str(cat) == f"Fruits, количество продуктов: {total_qty_new} шт."
+
+
+def test_product_add_returns_total_value():
+    """__add__ возвращает суммарную стоимость (price*quantity) двух товаров."""
+    p1 = Product("A", "desc", 100.0, 10)  # 1000
+    p2 = Product("B", "desc", 200.0, 2)   # 400
+    assert p1 + p2 == 1400.0
+
+
+def test_product_add_with_non_product():
+    """Сложение с не-Product должно вернуть NotImplemented."""
+    p1 = Product("A", "desc", 100.0, 10)
+    result = p1.__add__("not a product")
+    assert result is NotImplemented
