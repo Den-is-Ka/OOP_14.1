@@ -24,12 +24,12 @@ def test_price_setter_rejects_non_positive(capsys):
     p.price = 0
     out1 = capsys.readouterr().out
     assert "Цена не должна быть нулевая или отрицательная" in out1
-    assert p.price == pytest.approx(10.0)  # не изменилось
+    assert p.price == pytest.approx(10.0)
 
     p.price = -5
     out2 = capsys.readouterr().out
     assert "Цена не должна быть нулевая или отрицательная" in out2
-    assert p.price == pytest.approx(10.0)  # всё ещё не изменилось
+    assert p.price == pytest.approx(10.0)
 
 
 def test_new_product_classmethod_creates_instance():
@@ -63,6 +63,7 @@ def test_category_counters_after_init(sample_products):
     assert Category.product_count == 3
 
     assert "Category(name='Fruits'" in repr(cat1)
+    assert "Category(name='Citrus'" in repr(cat2)
 
 
 def test_add_product_updates_counters_and_getter_format(sample_products):
@@ -84,8 +85,8 @@ def test_add_product_updates_counters_and_getter_format(sample_products):
 
 
 def test_products_is_private_list_but_accessible_via_mangling(sample_products):
-    """Проверяем, атрибут products — что это геттер,
-    реальный список спрятан в __products.
+    """Проверяем, что атрибут products — это геттер,
+    а список спрятан под __products.
     """
     p1, p2, _ = sample_products
     cat = Category("Fruits", "Fresh fruits", [p1, p2])
