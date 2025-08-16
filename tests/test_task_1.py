@@ -1,38 +1,137 @@
+import pytest
+
 from src.task_1 import Category, Product
 
 
-def test_product_init():
-    p = Product("Milk", "1L milk", 1.49, 3)
+def test_product_init_and_price_getter(sample_product_data):
+    p = Product(**sample_product_data)
+    assert p.name == sample_product_data["name"]
+    assert p.description == sample_product_data["description"]
+    assert p.price == pytest.approx(sample_product_data["price"])
+    assert isinstance(p.quantity, int)
+    assert p.quantity == sample_product_data["quantity"]
+
+
+def test_price_setter_accepts_positive():
+    p = Product("N", "D", 10.0, 1)
+    p.price = 99.9
+    assert p.price == pytest.approx(99.9)
+
+
+def test_price_setter_rejects_non_positive(capsys):
+    p = Product("N", "D", 10.0, 1)
+
+    p.price = 0
+    out1 = capsys.readouterr().out
+    assert "Цена не должна быть нулевая или отрицательная" in out1
+    assert p.price == pytest.approx(10.0)
+
+    p.price = -5
+    out2 = capsys.readouterr().out
+    assert "Цена не должна быть нулевая или отрицательная" in out2
+    assert p.price == pytest.approx(10.0)
+
+
+def test_new_product_classmethod_creates_instance():
+    data = {
+        "name": "Milk",
+        "description": "1L milk",
+        "price": 1.49,
+        "quantity": 3,
+    }
+    p = Product.new_product(data)
+    assert isinstance(p, Product)
     assert p.name == "Milk"
     assert p.description == "1L milk"
-    assert isinstance(p.price, float)
-    assert p.price == 1.49
-    assert isinstance(p.quantity, int)
+    assert p.price == pytest.approx(1.49)
     assert p.quantity == 3
 
 
-def test_category_init(sample_products):
+# ---------- Category: счётчики и add_product ----------
+def test_category_counters_after_init(sample_products):
+    # до создания
+    assert Category.total_categories == 0
+    assert Category.total_products == 0
+    assert Category.category_count == 0
+    assert Category.product_count == 0
+
+    p1, p2, p3 = sample_products
+    cat1 = Category("Fruits", "Fresh fruits", [p1, p2])
+    cat2 = Category("Citrus", "Citrus-only", [p3])
+
+    assert Category.total_categories == 2
+    assert Category.category_count == 2
+    assert Category.total_products == 3
+    assert Category.product_count == 3
+
+    # __repr__
+    assert "Category(name='Fruits'" in repr(cat1)
+    assert "Category(name='Citrus'" in repr(cat2)
+
+
+def test_add_product_updates_counters_and_getter_format(sample_products):
+    p1, p2, p3 = sample_products
+    cat = Category("Fruits", "Fresh fruits", [p1, p2])
+
+    before_total = Category.total_products
+    before_prod_count = Category.product_count
+
+    new_p = Product("Pear", "Green pear", 0.9, 4)
+    cat.add_product(new_p)
+
+    assert Category.total_products == before_total + 1
+    assert Category.product_count == before_prod_count + 1
+
+    # Геттер products возвращает строку, теперь основан на __str__ продукта
+    out = cat.products
+    assert isinstance(out, str)
+    assert f"{new_p.name}, {new_p.price} руб. Остаток: {new_p.quantity} шт.\n" in out
+
+
+def test_products_is_private_list_but_accessible_via_mangling(sample_products):
+    """Атрибут products — это геттер (строка), а реальный список скрыт в __products."""
     p1, p2, _ = sample_products
     cat = Category("Fruits", "Fresh fruits", [p1, p2])
 
-    assert cat.name == "Fruits"
-    assert cat.description == "Fresh fruits"
-    assert isinstance(cat.products, list)
-    assert len(cat.products) == 2
-    assert all(isinstance(x, Product) for x in cat.products)
+    # публичный геттер возвращает строку
+    assert isinstance(cat.products, str)
+    # внутренний список по name-mangling
+    internal_list = getattr(cat, "_Category__products")
+    assert isinstance(internal_list, list)
+    assert len(internal_list) == 2
+    assert all(isinstance(x, Product) for x in internal_list)
 
 
-def test_total_counts_after_init(sample_categories):
-    assert Category.total_categories == 2
-    assert Category.total_products == 3
+# ---------- NEW: __str__ и __add__ ----------
+def test_product_str(sample_product_data):
+    """Строковое представление Product."""
+    p = Product(**sample_product_data)
+    expected = f"{p.name}, {p.price} руб. Остаток: {p.quantity} шт."
+    assert str(p) == expected
 
 
-def test_add_product_updates_totals(sample_categories):
-    cat1, _ = sample_categories
-    before = Category.total_products
+def test_category_str(sample_products):
+    """Строковое представление Category — сумма quantity всех товаров."""
+    p1, p2, p3 = sample_products
+    cat = Category("Fruits", "Fresh fruits", [p1, p2])
+    total_qty = p1.quantity + p2.quantity
+    assert str(cat) == f"Fruits, количество продуктов: {total_qty} шт."
 
-    new_p = Product("Pear", "Green pear", 0.9, 4)
-    cat1.add_product(new_p)
+    # после добавления товара qty пересчитывается
+    cat.add_product(p3)
+    total_qty_new = total_qty + p3.quantity
+    assert str(cat) == f"Fruits, количество продуктов: {total_qty_new} шт."
 
-    assert len(cat1.products) == 3
-    assert Category.total_products == before + 1
+
+def test_product_add_returns_total_value():
+    """__add__ возвращает суммарную стоимость (price*quantity) двух товаров."""
+    p1 = Product("A", "desc", 100.0, 10)  # 1000
+    p2 = Product("B", "desc", 200.0, 2)   # 400
+    assert p1 + p2 == 1400.0
+
+
+def test_product_add_with_non_product():
+    """Сложение с не-Product должно вернуть NotImplemented."""
+    p1 = Product("A", "desc", 100.0, 10)
+    result = p1.__add__("not a product")
+    assert result is NotImplemented
