@@ -1,4 +1,5 @@
 import pytest
+
 from src.task_1 import Category, Product
 
 

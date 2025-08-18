@@ -1,5 +1,6 @@
 import pytest
-from src.task_1 import Category, Product, Smartphone, LawnGrass
+
+from src.task_1 import Category, LawnGrass, Product, Smartphone
 
 
 # ---------- Product: базовые проверки и price ----------
