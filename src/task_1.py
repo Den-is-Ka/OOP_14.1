@@ -1,9 +1,53 @@
-class Product:
+from abc import ABC, abstractmethod
+
+
+class InitPrintMixin:
+    def __init__(self, *args, **kwargs):
+        try:
+            name = kwargs.get("name", args[0])
+            description = kwargs.get("description", args[1])
+            price = kwargs.get("price", args[2])
+            quantity = kwargs.get("quantity", args[3])
+            print(f"{self.__class__.__name__}({name!r}, {description!r}, {price}, {int(quantity)})")
+        except Exception:
+            pass
+        super().__init__(*args, **kwargs)
+
+
+class BaseProduct(ABC):
+    """Абстрактный класс для всех продуктов."""
     def __init__(self, name: str, description: str, price: float, quantity: int):
         self.name = name
         self.description = description
-        self.__price = float(price)
         self.quantity = int(quantity)
+
+    @property
+    @abstractmethod
+    def price(self) -> float:
+        """Цена продукта (должна быть реализована в наследнике."""
+        raise NotImplementedError
+
+    @price.setter
+    @abstractmethod
+    def price(self, new_price: float) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def __str__(self) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    def __add__(self, other):
+        raise NotImplementedError
+
+    def stock_value(self) -> float:
+        return self.price * self.quantity
+
+
+class Product(InitPrintMixin, BaseProduct):
+    def __init__(self, name: str, description: str, price: float, quantity: int):
+        super().__init__(name, description, price, quantity)
+        self.__price = float(price)
 
     def __repr__(self):
         return f"Product(name={self.name!r}, price={self.__price}, qty={self.quantity})"
@@ -12,7 +56,6 @@ class Product:
         return f"{self.name}, {self.price} руб. Остаток: {self.quantity} шт."
 
     def __add__(self, other):
-        # Разрешаем сложение только для одинаковых КЛАССОВ продуктов
         if not isinstance(other, Product):
             return NotImplemented
         if type(self) is not type(other):
@@ -26,7 +69,7 @@ class Product:
     @price.setter
     def price(self, new_price):
         if new_price > 0:
-            self.__price = new_price
+            self.__price = float(new_price)
         else:
             print("Цена не должна быть нулевая или отрицательная")
 
@@ -91,7 +134,6 @@ class Category:
     def __init__(self, name: str, description: str, products: list):
         self.name = name
         self.description = description
-        # Храним приватно
         self.__products = list(products)
 
         Category.total_categories += 1
@@ -107,7 +149,6 @@ class Category:
         return f"{self.name}, количество продуктов: {total_quantity} шт."
 
     def add_product(self, product: Product):
-        # Разрешаем добавлять только Product ИЛИ его наследников
         if not isinstance(product, Product):
             raise TypeError("В категорию можно добавлять только объекты Product или его наследников")
         self.__products.append(product)
@@ -116,5 +157,4 @@ class Category:
 
     @property
     def products(self):
-        # Возвращаем строку со всеми товарами
         return "".join(str(p) + "\n" for p in self.__products)
