@@ -1,9 +1,7 @@
 import pytest
 
-from src.task_1 import Category, LawnGrass, Product, Smartphone
+from src.task_1 import Category, LawnGrass, Product, Smartphone, BaseProduct
 
-
-# ---------- Product: базовые проверки и price ----------
 def test_product_init_and_price_getter(sample_product_data):
     p = Product(**sample_product_data)
     assert p.name == sample_product_data["name"]
@@ -48,7 +46,6 @@ def test_new_product_classmethod_creates_instance():
     assert p.quantity == 3
 
 
-# ---------- Category: счётчики и add_product ----------
 def test_category_counters_after_init(sample_products):
     # до создания
     assert Category.total_categories == 0
@@ -65,7 +62,6 @@ def test_category_counters_after_init(sample_products):
     assert Category.total_products == 3
     assert Category.product_count == 3
 
-    # __repr__
     assert "Category(name='Fruits'" in repr(cat1)
     assert "Category(name='Citrus'" in repr(cat2)
 
@@ -83,18 +79,17 @@ def test_add_product_updates_counters_and_getter_format(sample_products):
     assert Category.total_products == before_total + 1
     assert Category.product_count == before_prod_count + 1
 
-    # Геттер products возвращает строку, основанную на __str__ продукта
     out = cat.products
     assert isinstance(out, str)
     assert f"{new_p.name}, {new_p.price} руб. Остаток: {new_p.quantity} шт.\n" in out
 
 
 def test_products_is_private_list_but_accessible_via_mangling(sample_products):
-    """Атрибут products — это геттер (строка), а реальный список скрыт в __products."""
+    """Атрибут products — это строка, а реальный список скрыт в __products."""
     p1, p2, _ = sample_products
     cat = Category("Fruits", "Fresh fruits", [p1, p2])
 
-    # публичный геттер возвращает строку
+    # геттер возвращает строку
     assert isinstance(cat.products, str)
     # внутренний список по name-mangling
     internal_list = getattr(cat, "_Category__products")
@@ -103,7 +98,6 @@ def test_products_is_private_list_but_accessible_via_mangling(sample_products):
     assert all(isinstance(x, Product) for x in internal_list)
 
 
-# ---------- __str__ ----------
 def test_product_str(sample_product_data):
     p = Product(**sample_product_data)
     expected = f"{p.name}, {p.price} руб. Остаток: {p.quantity} шт."
@@ -121,16 +115,13 @@ def test_category_str(sample_products):
     assert str(cat) == f"Fruits, количество продуктов: {total_qty_new} шт."
 
 
-# ---------- __add__ ограничения ----------
 def test_add_same_class_products_ok():
     s1 = Smartphone("A", "d", 100.0, 2, 95.0, "M1", 128, "black")
     s2 = Smartphone("B", "d", 200.0, 1, 90.0, "M2", 256, "white")
-    # 100*2 + 200*1 = 400
     assert s1 + s2 == 400.0
 
     g1 = LawnGrass("G1", "d", 10.0, 10, "RU", "7 дней", "зелёный")
     g2 = LawnGrass("G2", "d", 20.0, 3, "US", "5 дней", "тёмно-зелёный")
-    # 10*10 + 20*3 = 160
     assert g1 + g2 == 160.0
 
 
@@ -143,21 +134,33 @@ def test_add_different_class_products_raises_typeerror():
 
 def test_add_with_non_product_returns_notimplemented():
     p = Product("X", "d", 10.0, 1)
-    # прямой вызов __add__ возвращает NotImplemented
     assert p.__add__("not a product") is NotImplemented
 
 
-# ---------- add_product ограничения ----------
 def test_category_add_accepts_subclasses_and_rejects_others():
     s = Smartphone("A", "d", 100.0, 2, 95.0, "M1", 128, "black")
     g = LawnGrass("G", "d", 10.0, 10, "RU", "7 дней", "зелёный")
     cat = Category("Mixed", "desc", [])
 
-    # Принимаем Product и наследников
     cat.add_product(s)
     cat.add_product(g)
     cat.add_product(Product("P", "d", 1.0, 1))
 
-    # Но отвергаем произвольные объекты
     with pytest.raises(TypeError):
         cat.add_product("not a product")
+
+
+def test_baseproduct_is_abstract():
+    with pytest.raises(TypeError):
+        BaseProduct("A", "B", 1.0, 1)  # абстрактные методы не реализованы
+
+
+def test_init_print_mixin_prints_on_creation(capsys):
+    p = Product("P", "D", 10.0, 2)
+    out = capsys.readouterr().out
+    assert "Product('P', 'D', 10.0, 2)" in out
+
+    s = Smartphone("S", "Desc", 99.9, 1, 90.0, "M1", 128, "black")
+    out2 = capsys.readouterr().out
+    assert "Smartphone('S', 'Desc', 99.9, 1)" in out2
+
