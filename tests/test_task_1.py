@@ -1,8 +1,9 @@
 import pytest
 
-from src.task_1 import Category, Product
+from src.task_1 import Category, LawnGrass, Product, Smartphone
 
 
+# ---------- Product: базовые проверки и price ----------
 def test_product_init_and_price_getter(sample_product_data):
     p = Product(**sample_product_data)
     assert p.name == sample_product_data["name"]
@@ -82,7 +83,7 @@ def test_add_product_updates_counters_and_getter_format(sample_products):
     assert Category.total_products == before_total + 1
     assert Category.product_count == before_prod_count + 1
 
-    # Геттер products возвращает строку, теперь основан на __str__ продукта
+    # Геттер products возвращает строку, основанную на __str__ продукта
     out = cat.products
     assert isinstance(out, str)
     assert f"{new_p.name}, {new_p.price} руб. Остаток: {new_p.quantity} шт.\n" in out
@@ -102,36 +103,61 @@ def test_products_is_private_list_but_accessible_via_mangling(sample_products):
     assert all(isinstance(x, Product) for x in internal_list)
 
 
-# ---------- NEW: __str__ и __add__ ----------
+# ---------- __str__ ----------
 def test_product_str(sample_product_data):
-    """Строковое представление Product."""
     p = Product(**sample_product_data)
     expected = f"{p.name}, {p.price} руб. Остаток: {p.quantity} шт."
     assert str(p) == expected
 
 
 def test_category_str(sample_products):
-    """Строковое представление Category — сумма quantity всех товаров."""
     p1, p2, p3 = sample_products
     cat = Category("Fruits", "Fresh fruits", [p1, p2])
     total_qty = p1.quantity + p2.quantity
     assert str(cat) == f"Fruits, количество продуктов: {total_qty} шт."
 
-    # после добавления товара qty пересчитывается
     cat.add_product(p3)
     total_qty_new = total_qty + p3.quantity
     assert str(cat) == f"Fruits, количество продуктов: {total_qty_new} шт."
 
 
-def test_product_add_returns_total_value():
-    """__add__ возвращает суммарную стоимость (price*quantity) двух товаров."""
-    p1 = Product("A", "desc", 100.0, 10)  # 1000
-    p2 = Product("B", "desc", 200.0, 2)   # 400
-    assert p1 + p2 == 1400.0
+# ---------- __add__ ограничения ----------
+def test_add_same_class_products_ok():
+    s1 = Smartphone("A", "d", 100.0, 2, 95.0, "M1", 128, "black")
+    s2 = Smartphone("B", "d", 200.0, 1, 90.0, "M2", 256, "white")
+    # 100*2 + 200*1 = 400
+    assert s1 + s2 == 400.0
+
+    g1 = LawnGrass("G1", "d", 10.0, 10, "RU", "7 дней", "зелёный")
+    g2 = LawnGrass("G2", "d", 20.0, 3, "US", "5 дней", "тёмно-зелёный")
+    # 10*10 + 20*3 = 160
+    assert g1 + g2 == 160.0
 
 
-def test_product_add_with_non_product():
-    """Сложение с не-Product должно вернуть NotImplemented."""
-    p1 = Product("A", "desc", 100.0, 10)
-    result = p1.__add__("not a product")
-    assert result is NotImplemented
+def test_add_different_class_products_raises_typeerror():
+    s = Smartphone("A", "d", 100.0, 2, 95.0, "M1", 128, "black")
+    g = LawnGrass("G", "d", 10.0, 10, "RU", "7 дней", "зелёный")
+    with pytest.raises(TypeError):
+        _ = s + g
+
+
+def test_add_with_non_product_returns_notimplemented():
+    p = Product("X", "d", 10.0, 1)
+    # прямой вызов __add__ возвращает NotImplemented
+    assert p.__add__("not a product") is NotImplemented
+
+
+# ---------- add_product ограничения ----------
+def test_category_add_accepts_subclasses_and_rejects_others():
+    s = Smartphone("A", "d", 100.0, 2, 95.0, "M1", 128, "black")
+    g = LawnGrass("G", "d", 10.0, 10, "RU", "7 дней", "зелёный")
+    cat = Category("Mixed", "desc", [])
+
+    # Принимаем Product и наследников
+    cat.add_product(s)
+    cat.add_product(g)
+    cat.add_product(Product("P", "d", 1.0, 1))
+
+    # Но отвергаем произвольные объекты
+    with pytest.raises(TypeError):
+        cat.add_product("not a product")
