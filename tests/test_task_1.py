@@ -1,6 +1,7 @@
 import pytest
 
-from src.task_1 import Category, LawnGrass, Product, Smartphone, BaseProduct
+from src.task_1 import BaseProduct, Category, LawnGrass, Product, Smartphone
+
 
 def test_product_init_and_price_getter(sample_product_data):
     p = Product(**sample_product_data)
@@ -156,11 +157,10 @@ def test_baseproduct_is_abstract():
 
 
 def test_init_print_mixin_prints_on_creation(capsys):
-    p = Product("P", "D", 10.0, 2)
+    Product("P", "D", 10.0, 2)
     out = capsys.readouterr().out
     assert "Product('P', 'D', 10.0, 2)" in out
 
-    s = Smartphone("S", "Desc", 99.9, 1, 90.0, "M1", 128, "black")
+    Smartphone("S", "Desc", 99.9, 1, 90.0, "M1", 128, "black")
     out2 = capsys.readouterr().out
     assert "Smartphone('S', 'Desc', 99.9, 1)" in out2
-

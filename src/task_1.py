@@ -2,17 +2,21 @@ from abc import ABC, abstractmethod
 
 
 class InitPrintMixin:
-    """Миксин: при создании объекта печатает класс и параметры конструктора."""
-    def __init__(self, name: str, description: str, price: float, quantity: int, *args, **kwargs):
-        # Печать вида: Product('Продукт1', 'Описание', 1200, 10)
-        print(f"{self.__class__.__name__}({name!r}, {description!r}, {price}, {int(quantity)})")
-        super().__init__(name, description, price, quantity, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        try:
+            name = kwargs.get("name", args[0])
+            description = kwargs.get("description", args[1])
+            price = kwargs.get("price", args[2])
+            quantity = kwargs.get("quantity", args[3])
+            print(f"{self.__class__.__name__}({name!r}, {description!r}, {price}, {int(quantity)})")
+        except Exception:
+            pass
+        super().__init__(*args, **kwargs)
 
 
 class BaseProduct(ABC):
-    """Абстрактный базовый класс для всех продуктов."""
+    """Абстрактный класс для всех продуктов."""
     def __init__(self, name: str, description: str, price: float, quantity: int):
-        # Общая часть, присущая любому продукту
         self.name = name
         self.description = description
         self.quantity = int(quantity)
@@ -20,7 +24,7 @@ class BaseProduct(ABC):
     @property
     @abstractmethod
     def price(self) -> float:
-        """Цена продукта (должна быть реализована в наследнике с геттером/сеттером)."""
+        """Цена продукта (должна быть реализована в наследнике."""
         raise NotImplementedError
 
     @price.setter
