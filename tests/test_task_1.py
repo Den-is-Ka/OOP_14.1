@@ -153,7 +153,7 @@ def test_category_add_accepts_subclasses_and_rejects_others():
 
 def test_baseproduct_is_abstract():
     with pytest.raises(TypeError):
-        BaseProduct("A", "B", 1.0, 1)  # абстрактные методы не реализованы
+        BaseProduct("A", "B", 1.0, 1)
 
 
 def test_init_print_mixin_prints_on_creation(capsys):
@@ -164,3 +164,20 @@ def test_init_print_mixin_prints_on_creation(capsys):
     Smartphone("S", "Desc", 99.9, 1, 90.0, "M1", 128, "black")
     out2 = capsys.readouterr().out
     assert "Smartphone('S', 'Desc', 99.9, 1)" in out2
+
+
+def test_product_init_with_zero_quantity_raises():
+    with pytest.raises(ValueError) as e:
+        Product("Test", "Zero qty", 10.0, 0)
+    assert "Товар с нулевым количеством не может быть добавлен" in str(e.value)
+
+
+def test_category_middle_price_with_products(sample_products):
+    cat = Category("Fruits", "Fresh fruits", sample_products)
+    expected = round(sum(p.price for p in sample_products) / len(sample_products), 2)
+    assert cat.middle_price() == expected
+
+
+def test_category_middle_price_empty_returns_zero():
+    cat = Category("Empty", "No products", [])
+    assert cat.middle_price() == 0.0
